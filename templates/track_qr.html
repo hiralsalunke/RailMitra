@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RailMitra — Scan to Track</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-deep:#060b18; --navy-mid:#0d1830; --navy-panel:#111f3f;
+    --blue-primary:#2f6fed; --blue-bright:#5b8dff; --cyan-glow:#4fd8ff;
+    --amber-signal:#ffb020; --text-main:#eaf1ff; --text-dim:#8ea1c7;
+    --border-soft:rgba(95,140,255,0.16);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    min-height:100vh;
+    background: radial-gradient(ellipse 70% 50% at 10% 0%, rgba(47,111,237,0.14), transparent 60%),
+      linear-gradient(180deg, var(--navy-deep) 0%, var(--navy-mid) 100%);
+    font-family:'Inter', sans-serif; color:var(--text-main);
+    display:flex; align-items:center; justify-content:center;
+    padding:24px;
+  }
+  .card{
+    background:rgba(17,31,63,0.6); border:1px solid var(--border-soft);
+    border-radius:20px; padding:44px 40px; text-align:center;
+    max-width:380px; width:100%;
+    backdrop-filter:blur(14px);
+  }
+  .logo{ display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:28px; }
+  .logo .dot{ width:9px;height:9px;border-radius:50%; background:var(--amber-signal); box-shadow:0 0 10px 2px rgba(255,176,32,0.7); }
+  .logo span{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:19px; }
+  .logo span b{ color:var(--cyan-glow); }
+
+  .train-num{ color:var(--text-dim); font-size:13px; letter-spacing:0.03em; margin-bottom:4px; }
+  .train-date{ color:var(--text-dim); font-size:12px; margin-bottom:26px; }
+
+  .qr-image-wrap{
+    display:inline-block; background:#fff; padding:14px; border-radius:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.3);
+  }
+  .qr-image-wrap img{ display:block; width:220px; height:220px; }
+
+  .qr-caption{
+    margin-top:22px; font-size:14.5px; font-weight:600;
+    font-family:'Space Grotesk', sans-serif;
+  }
+  .qr-hint{
+    margin-top:8px; font-size:12.5px; color:var(--text-dim); line-height:1.6;
+  }
+
+  .back-link{
+    display:inline-block; margin-top:28px; color:var(--text-dim);
+    font-size:12.5px; text-decoration:none;
+  }
+  .back-link:hover{ color:var(--text-main); }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo"><span class="dot"></span><span>Rail<b>Mitra</b></span></div>
+
+  <div class="train-num">Train No. {{ train_number }}</div>
+  <div class="train-date">{{ date }}</div>
+
+  <div class="qr-image-wrap">
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data={{ tracking_url_for_qr | urlencode }}" alt="QR code to track this train">
+  </div>
+
+  <div class="qr-caption">Scan with your phone to track live</div>
+  <div class="qr-hint">Opens this train's live position, delay, and stop-by-stop timeline directly in your phone's browser — no app needed.</div>
+
+  <a href="/live-status" class="back-link">← Back to search</a>
+</div>
+
+</body>
+</html>

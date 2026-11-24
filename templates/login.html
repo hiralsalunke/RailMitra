@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RailMitra — Admin Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-deep:#060b18;
+    --navy-mid:#0d1830;
+    --navy-panel:#101d3a;
+    --blue-primary:#2f6fed;
+    --blue-bright:#5b8dff;
+    --cyan-glow:#4fd8ff;
+    --amber-signal:#ffb020;
+    --text-main:#eaf1ff;
+    --text-dim:#8ea1c7;
+    --border-soft:rgba(95,140,255,0.18);
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 80% 60% at 15% 10%, rgba(47,111,237,0.18), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 90% 90%, rgba(79,216,255,0.10), transparent 60%),
+      linear-gradient(180deg, var(--navy-deep) 0%, var(--navy-mid) 100%);
+    font-family:'Inter', sans-serif;
+    color:var(--text-main);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    position:relative;
+  }
+
+  /* animated particle-network background */
+  #networkCanvas{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+  }
+
+  /* ambient stars/particles */
+  .stars{
+    position:fixed; inset:0; pointer-events:none; z-index:0;
+  }
+  .star{
+    position:absolute; width:2px; height:2px; border-radius:50%;
+    background:rgba(255,255,255,0.5);
+    animation:twinkle 3.5s ease-in-out infinite;
+  }
+  @keyframes twinkle{
+    0%,100%{opacity:0.15;}
+    50%{opacity:0.8;}
+  }
+
+  .wrapper{
+    position:relative;
+    z-index:1;
+    display:grid;
+    grid-template-columns:1.1fr 1fr;
+    width:min(980px, 92vw);
+    min-height:600px;
+    background:rgba(13,24,48,0.55);
+    border:1px solid var(--border-soft);
+    border-radius:20px;
+    overflow:hidden;
+    backdrop-filter:blur(18px);
+    box-shadow:0 30px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  /* LEFT — brand & signature animation */
+  .brand-side{
+    position:relative;
+    padding:48px 40px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    background:
+      linear-gradient(160deg, rgba(47,111,237,0.14), rgba(6,11,24,0) 60%);
+    border-right:1px solid var(--border-soft);
+  }
+
+  .brand-mark{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .brand-mark .dot{
+    width:10px;height:10px;border-radius:50%;
+    background:var(--amber-signal);
+    box-shadow:0 0 12px 3px rgba(255,176,32,0.7);
+    animation:pulse-signal 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse-signal{
+    0%,100%{opacity:1; box-shadow:0 0 12px 3px rgba(255,176,32,0.7);}
+    50%{opacity:0.4; box-shadow:0 0 4px 1px rgba(255,176,32,0.3);}
+  }
+  .brand-mark span{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:14px;
+    letter-spacing:0.18em;
+    color:var(--text-dim);
+    text-transform:uppercase;
+  }
+
+  .brand-title{
+    margin-top:40px;
+  }
+  .brand-title h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(38px, 5vw, 52px);
+    line-height:1.05;
+    background:linear-gradient(120deg, #ffffff 10%, var(--cyan-glow) 60%, var(--blue-bright) 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    letter-spacing:-0.01em;
+  }
+  .brand-title p{
+    margin-top:14px;
+    color:var(--text-dim);
+    font-size:15px;
+    max-width:320px;
+    line-height:1.6;
+  }
+
+  /* Track + train signature animation */
+  .track-scene{
+    position:relative;
+    height:150px;
+    margin-top:30px;
+  }
+  .rail-line{
+    position:absolute;
+    bottom:38px;
+    left:0; right:0;
+    height:2px;
+    background:linear-gradient(90deg, transparent, rgba(79,216,255,0.5) 15%, rgba(79,216,255,0.5) 85%, transparent);
+  }
+  .rail-line::after{
+    content:"";
+    position:absolute; inset:0;
+    background:repeating-linear-gradient(90deg, rgba(255,255,255,0.35) 0 6px, transparent 6px 18px);
+    animation:sleepers 1.2s linear infinite;
+  }
+  @keyframes sleepers{
+    from{transform:translateX(0);}
+    to{transform:translateX(-24px);}
+  }
+
+  .station-dots{
+    position:absolute;
+    bottom:34px; left:0; right:0;
+    display:flex; justify-content:space-between;
+    padding:0 6px;
+  }
+  .station-dots span{
+    width:5px;height:5px;border-radius:50%;
+    background:rgba(94,140,255,0.4);
+  }
+
+  .train{
+    position:absolute;
+    bottom:44px;
+    left:-120px;
+    width:110px;
+    animation:runTrain 5.5s linear infinite;
+    filter:drop-shadow(0 0 10px rgba(79,216,255,0.45));
+  }
+  @keyframes runTrain{
+    0%{ left:-120px; }
+    100%{ left:calc(100% + 40px); }
+  }
+  .train svg{ width:100%; display:block; }
+
+  .speed-lines{
+    position:absolute;
+    bottom:50px;
+    left:-160px;
+    width:60px; height:16px;
+    animation:runTrain 5.5s linear infinite;
+    opacity:0.5;
+  }
+  .speed-lines div{
+    height:2px;
+    background:linear-gradient(90deg, transparent, var(--cyan-glow));
+    margin-bottom:4px;
+    border-radius:2px;
+  }
+  .speed-lines div:nth-child(1){width:40px;}
+  .speed-lines div:nth-child(2){width:26px;}
+  .speed-lines div:nth-child(3){width:34px;}
+
+  .tagline-foot{
+    color:var(--text-dim);
+    font-size:12.5px;
+    letter-spacing:0.04em;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .tagline-foot::before{
+    content:"";
+    width:22px;height:1px;
+    background:var(--border-soft);
+  }
+
+  /* RIGHT — form */
+  .form-side{
+    padding:56px 48px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+  .form-side h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:26px;
+    font-weight:600;
+    margin-bottom:8px;
+  }
+  .form-side .sub{
+    color:var(--text-dim);
+    font-size:14px;
+    margin-bottom:32px;
+  }
+
+  .field{
+    margin-bottom:20px;
+  }
+  .field label{
+    display:block;
+    font-size:12.5px;
+    color:var(--text-dim);
+    margin-bottom:8px;
+    letter-spacing:0.03em;
+  }
+  .field input{
+    width:100%;
+    padding:13px 16px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border-soft);
+    border-radius:10px;
+    color:var(--text-main);
+    font-size:14.5px;
+    font-family:'Inter', sans-serif;
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .field input::placeholder{ color:#5c6d8f; }
+  .field input:focus{
+    outline:none;
+    border-color:var(--blue-bright);
+    background:rgba(47,111,237,0.06);
+    box-shadow:0 0 0 4px rgba(47,111,237,0.15);
+  }
+  .field input:disabled{
+    opacity:0.45;
+    cursor:not-allowed;
+    background:rgba(255,255,255,0.015);
+  }
+
+  .submit-btn{
+    width:100%;
+    padding:14px;
+    margin-top:8px;
+    border:none;
+    border-radius:10px;
+    background:linear-gradient(120deg, var(--blue-primary), #2452c7);
+    color:#fff;
+    font-family:'Space Grotesk', sans-serif;
+    font-size:15px;
+    font-weight:600;
+    letter-spacing:0.02em;
+    cursor:pointer;
+    box-shadow:0 10px 24px rgba(47,111,237,0.35);
+    transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
+  }
+  .submit-btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 14px 30px rgba(47,111,237,0.45);
+    filter:brightness(1.05);
+  }
+  .submit-btn:active{ transform:translateY(0); }
+  .submit-btn:disabled{
+    opacity:0.4;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+    filter:none;
+  }
+
+  .error-msg{
+    margin-top:16px;
+    padding:11px 14px;
+    border-radius:8px;
+    background:rgba(255,90,90,0.08);
+    border:1px solid rgba(255,90,90,0.35);
+    color:#ff9a9a;
+    font-size:13.5px;
+  }
+
+  .lockout-timer{
+    margin-top:14px;
+    padding:16px;
+    border-radius:10px;
+    background:rgba(255,176,32,0.08);
+    border:1px solid rgba(255,176,32,0.35);
+    text-align:center;
+  }
+  .lockout-timer .label{
+    font-size:11.5px;
+    color:var(--text-dim);
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  .lockout-timer .clock{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:30px;
+    font-weight:700;
+    color:var(--amber-signal);
+    letter-spacing:0.04em;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .foot-note{
+    margin-top:28px;
+    font-size:12px;
+    color:#4d5f82;
+    text-align:center;
+  }
+
+  @media (max-width:760px){
+    .wrapper{ grid-template-columns:1fr; }
+    .brand-side{ display:none; }
+    .form-side{ padding:40px 28px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .train, .speed-lines, .rail-line::after, .brand-mark .dot, .star{
+      animation:none !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="networkCanvas"></canvas>
+<div class="stars" id="stars"></div>
+
+<div class="wrapper">
+
+  <!-- LEFT: Brand + animation -->
+  <div class="brand-side">
+    <div>
+      <div class="brand-mark">
+        <span class="dot"></span>
+        <span>Station Control Access</span>
+      </div>
+      <div class="brand-title">
+        <h1>Rail<br>Mitra</h1>
+        <p>One console to schedule, track, and resolve conflicts across every platform — before delay becomes disruption.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="track-scene">
+        <div class="speed-lines">
+          <div></div><div></div><div></div>
+        </div>
+        <div class="train">
+          <svg viewBox="0 0 110 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="10" width="70" height="18" rx="4" fill="#5b8dff"/>
+            <rect x="2" y="10" width="70" height="18" rx="4" fill="url(#body-grad)" fill-opacity="0.9"/>
+            <path d="M72 10 H90 C96 10 100 14 100 19 V22 C100 25.3 97.3 28 94 28 H72 V10Z" fill="#2f6fed"/>
+            <rect x="10" y="14" width="12" height="8" rx="1.5" fill="#bfe3ff"/>
+            <rect x="28" y="14" width="12" height="8" rx="1.5" fill="#bfe3ff"/>
+            <rect x="46" y="14" width="12" height="8" rx="1.5" fill="#bfe3ff"/>
+            <circle cx="80" cy="17" r="3" fill="#ffe9b0"/>
+            <circle cx="14" cy="31" r="5" fill="#0d1830" stroke="#4fd8ff" stroke-width="1.4"/>
+            <circle cx="34" cy="31" r="5" fill="#0d1830" stroke="#4fd8ff" stroke-width="1.4"/>
+            <circle cx="60" cy="31" r="5" fill="#0d1830" stroke="#4fd8ff" stroke-width="1.4"/>
+            <circle cx="86" cy="31" r="5" fill="#0d1830" stroke="#4fd8ff" stroke-width="1.4"/>
+            <defs>
+              <linearGradient id="body-grad" x1="2" y1="10" x2="72" y2="28" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#4fd8ff"/>
+                <stop offset="1" stop-color="#2f6fed"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="rail-line"></div>
+        <div class="station-dots">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="tagline-foot">Live conflict detection · Platform-aware scheduling</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Login form -->
+  <div class="form-side">
+    <h2>Admin Sign In</h2>
+    <p class="sub">Enter your credentials to access the control dashboard.</p>
+
+    <form action="/login" method="post" id="loginForm">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Enter admin username" required autocomplete="username" {% if locked %}disabled{% endif %}>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter password" required autocomplete="current-password" {% if locked %}disabled{% endif %}>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn" {% if locked %}disabled{% endif %}>
+        {% if locked %}Locked{% else %}Access Dashboard{% endif %}
+      </button>
+
+      {% if error %}
+      <div class="error-msg">{{ error }}</div>
+      {% endif %}
+
+      {% if locked %}
+      <div class="lockout-timer">
+        <div class="label">Try again in</div>
+        <div class="clock" id="lockoutClock">--:--</div>
+      </div>
+      {% endif %}
+    </form>
+
+    <p class="foot-note">RailMitra Control System — Authorized Personnel Only</p>
+    <p style="text-align:center; margin-top:10px;">
+      <a href="/live-status" style="color:var(--cyan-glow); font-size:12.5px; text-decoration:none;">Not an admin? Check live train status →</a>
+    </p>
+  </div>
+
+</div>
+
+<script>
+  // scatter ambient stars
+  const starField = document.getElementById('stars');
+  for(let i=0;i<40;i++){
+    const s = document.createElement('div');
+    s.className='star';
+    s.style.left = Math.random()*100+'vw';
+    s.style.top = Math.random()*100+'vh';
+    s.style.animationDelay = (Math.random()*3)+'s';
+    starField.appendChild(s);
+  }
+
+  // ---- animated particle-network background ----
+  (function(){
+    const canvas = document.getElementById('networkCanvas');
+    const ctx = canvas.getContext('2d');
+    let w, h, particles;
+
+    function resize(){
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    const COUNT = Math.min(70, Math.floor((window.innerWidth * window.innerHeight) / 18000));
+    const LINK_DIST = 130;
+
+    particles = Array.from({length: COUNT}, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: (Math.random() - 0.5) * 0.35,
+    }));
+
+    function step(){
+      ctx.clearRect(0, 0, w, h);
+
+      for(const p of particles){
+        p.x += p.vx; p.y += p.vy;
+        if(p.x < 0 || p.x > w) p.vx *= -1;
+        if(p.y < 0 || p.y > h) p.vy *= -1;
+      }
+
+      for(let i=0;i<particles.length;i++){
+        for(let j=i+1;j<particles.length;j++){
+          const a = particles[i], b = particles[j];
+          const dx = a.x - b.x, dy = a.y - b.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if(dist < LINK_DIST){
+            ctx.strokeStyle = `rgba(79,216,255,${0.16 * (1 - dist/LINK_DIST)})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      for(const p of particles){
+        ctx.fillStyle = 'rgba(95,140,255,0.55)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.6, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      requestAnimationFrame(step);
+    }
+
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      step();
+    }
+  })();
+
+  // ---- lockout countdown ----
+  {% if locked %}
+  (function(){
+    let secondsLeft = {{ lockout_seconds }};
+    const clockEl = document.getElementById('lockoutClock');
+
+    function render(){
+      const m = Math.floor(secondsLeft / 60);
+      const s = secondsLeft % 60;
+      clockEl.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+    render();
+
+    const timer = setInterval(function(){
+      secondsLeft -= 1;
+      if(secondsLeft <= 0){
+        clearInterval(timer);
+        // Server is the source of truth -- reload so it re-checks the
+        // lockout window and re-enables the form for real.
+        window.location.reload();
+        return;
+      }
+      render();
+    }, 1000);
+  })();
+  {% endif %}
+</script>
+
+</body>
+</html>

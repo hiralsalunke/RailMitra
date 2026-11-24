@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RailMitra — Live Train Status</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-deep:#060b18; --navy-mid:#0d1830; --navy-panel:#111f3f;
+    --blue-primary:#2f6fed; --blue-bright:#5b8dff; --cyan-glow:#4fd8ff;
+    --amber-signal:#ffb020; --green-ok:#3ddc97;
+    --text-main:#eaf1ff; --text-dim:#8ea1c7; --border-soft:rgba(95,140,255,0.16);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    min-height:100vh;
+    background: radial-gradient(ellipse 70% 50% at 10% 0%, rgba(47,111,237,0.14), transparent 60%),
+      linear-gradient(180deg, var(--navy-deep) 0%, var(--navy-mid) 100%);
+    font-family:'Inter', sans-serif; color:var(--text-main);
+    padding:32px clamp(20px, 4vw, 56px);
+  }
+  header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .logo{ display:flex; align-items:center; gap:10px; }
+  .logo .dot{ width:9px;height:9px;border-radius:50%; background:var(--amber-signal); box-shadow:0 0 10px 2px rgba(255,176,32,0.7); }
+  .logo span{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:20px; }
+  .logo span b{ color:var(--cyan-glow); }
+  .header-actions{ display:flex; gap:10px; }
+  .admin-link{
+    background:transparent; border:1px solid var(--border-soft); color:var(--text-dim);
+    padding:10px 18px; border-radius:10px; text-decoration:none;
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:13px;
+  }
+  .admin-link:hover{ background:rgba(47,111,237,0.08); color:var(--text-main); }
+
+  .subtitle{ color:var(--text-dim); font-size:13.5px; margin-bottom:24px; }
+
+  .fetch-form{
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+    margin-bottom:14px;
+  }
+  .fetch-form input{
+    padding:11px 14px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border-soft);
+    border-radius:9px; color:var(--text-main); font-size:13.5px; font-family:'Inter', sans-serif;
+  }
+  .fetch-form input::placeholder{ color:#5c6d8f; }
+  .fetch-form button{
+    padding:11px 20px; border-radius:9px; border:none;
+    background:linear-gradient(120deg, var(--blue-primary), #2452c7);
+    color:#fff; font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:13.5px; cursor:pointer;
+  }
+  .fetch-form .clear-link{ color:var(--text-dim); font-size:12.5px; text-decoration:none; }
+
+  .search-wrap{ margin-bottom:20px; }
+  .search-wrap input{
+    width:100%; max-width:420px;
+    padding:12px 16px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border-soft);
+    border-radius:10px; color:var(--text-main); font-size:14px; font-family:'Inter', sans-serif;
+  }
+  .search-wrap input::placeholder{ color:#5c6d8f; }
+  .search-wrap input:focus{ outline:none; border-color:var(--blue-bright); box-shadow:0 0 0 4px rgba(47,111,237,0.15); }
+
+  .panel{
+    background:rgba(17,31,63,0.55); border:1px solid var(--border-soft);
+    border-radius:16px; backdrop-filter:blur(14px); overflow:hidden;
+  }
+  table{ width:100%; border-collapse:collapse; }
+  thead th{
+    text-align:left; padding:14px 24px; font-size:11.5px; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--text-dim); font-weight:600; border-bottom:1px solid var(--border-soft);
+  }
+  tbody td{ padding:16px 24px; font-size:14px; border-bottom:1px solid rgba(95,140,255,0.08); }
+  tbody tr:hover{ background:rgba(47,111,237,0.05); }
+  tbody tr:last-child td{ border-bottom:none; }
+
+  .train-name{ font-weight:600; }
+  .train-num{ color:var(--text-dim); font-size:12px; }
+  .route{ color:var(--cyan-glow); font-size:13.5px; }
+  .platform-chip{
+    display:inline-block; background:rgba(95,140,255,0.12); border:1px solid var(--border-soft);
+    color:var(--blue-bright); padding:2px 9px; border-radius:6px; font-size:12px;
+  }
+
+  .status-chip{ display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12.5px; font-weight:500; }
+  .status-chip.ontime{ background:rgba(61,220,151,0.12); color:var(--green-ok); }
+  .status-chip.ontime::before{ content:""; width:6px;height:6px;border-radius:50%; background:var(--green-ok); }
+  .status-chip.delayed{ background:rgba(255,176,32,0.12); color:var(--amber-signal); }
+  .status-chip.delayed::before{ content:""; width:6px;height:6px;border-radius:50%; background:var(--amber-signal); }
+  .status-chip.pending{ background:rgba(95,140,255,0.12); color:var(--blue-bright); }
+  .status-chip.pending::before{ content:""; width:6px;height:6px;border-radius:50%; background:var(--blue-bright); }
+  .status-chip.arriving{ background:rgba(79,216,255,0.12); color:var(--cyan-glow); }
+  .status-chip.arriving::before{ content:""; width:6px;height:6px;border-radius:50%; background:var(--cyan-glow); }
+  .status-chip.departed{ background:rgba(142,161,199,0.12); color:var(--text-dim); }
+  .status-chip.departed::before{ content:""; width:6px;height:6px;border-radius:50%; background:var(--text-dim); }
+
+  .track-btn-cell{
+    background:transparent; border:1px solid rgba(79,216,255,0.35); color:var(--cyan-glow);
+    padding:7px 14px; border-radius:8px; font-size:12.5px; font-weight:600;
+    text-decoration:none; font-family:'Space Grotesk', sans-serif; white-space:nowrap;
+    display:inline-flex; align-items:center; gap:5px;
+  }
+  .track-btn-cell:hover{ background:rgba(79,216,255,0.1); }
+
+  .empty-state{ padding:60px 24px; text-align:center; color:var(--text-dim); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="dot"></span><span>Rail<b>Mitra</b></span></div>
+  <div class="header-actions">
+    <a href="/" class="admin-link">Admin Login →</a>
+  </div>
+</header>
+<p class="subtitle">Live train status — no login required. Search a route below to fetch real trains, or track a specific train.</p>
+
+<form class="fetch-form" action="/live-status" method="get">
+  <input type="text" name="from_station" list="stationOptions" placeholder="From station" value="{{ selected_from_station or '' }}">
+  <input type="text" name="to_station" list="stationOptions" placeholder="To station" value="{{ selected_to_station or '' }}">
+  <datalist id="stationOptions">
+    {% for st in all_stations %}
+    <option value="{{ st }}">
+    {% endfor %}
+  </datalist>
+  <input type="date" name="date" value="{{ selected_date or '' }}">
+  <select name="hour">
+    <option value="">Any Time</option>
+    {% for h in range(0, 24) %}
+    <option value="{{ h }}" {% if selected_hour == h %}selected{% endif %}>{{ "%02d:00"|format(h) }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">🔍 Search</button>
+  {% if selected_from_station or selected_to_station or selected_date or selected_hour is not none %}
+  <a href="/live-status" class="clear-link">Clear search</a>
+  {% endif %}
+</form>
+
+<div class="search-wrap">
+  <input type="text" id="publicSearch" placeholder="Quick filter within results (train number, name, station)..." onkeyup="filterPublic()">
+</div>
+
+<div class="panel">
+  {% if trains and trains|length > 0 %}
+  <table>
+    <thead>
+      <tr>
+        <th>Train</th>
+        <th>Station</th>
+        <th>Route</th>
+        <th>Platform</th>
+        <th>Arrival</th>
+        <th>Departure</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th>Track</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in trains %}
+      <tr>
+        <td>
+          <div class="train-name">{{ t.train_name }}</div>
+          <div class="train-num">{{ t.train_number }}</div>
+        </td>
+        <td>{{ t.station_name }}</td>
+        <td class="route">{{ t.source_station }} → {{ t.destination_station }}</td>
+        <td><span class="platform-chip">P{{ t.platform_number }}</span></td>
+        <td>{{ t.scheduled_arrival }}</td>
+        <td>{{ t.scheduled_departure }}</td>
+        <td>{{ t.travel_date }}</td>
+        <td>
+          {% if t.status == 'On Time' %}
+          <span class="status-chip ontime">On Time</span>
+          {% elif t.status == 'Reassignment Suggested' %}
+          <span class="status-chip pending">Rescheduling</span>
+          {% elif t.status == 'Arriving Soon' %}
+          <span class="status-chip arriving">Arriving Soon</span>
+          {% elif t.status == 'Departed' %}
+          <span class="status-chip departed">Departed</span>
+          {% else %}
+          <span class="status-chip delayed">Delayed {{ t.delay_minutes }} min</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/track_qr?train_number={{ t.train_number }}&date={{ t.travel_date }}" class="track-btn-cell">🛰️ Track</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <div style="font-size:32px;">🚆</div>
+    <p>No trains yet — search a From/To station above to fetch real trains.</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  function filterPublic(){
+    const query = document.getElementById('publicSearch').value.toLowerCase();
+    document.querySelectorAll('tbody tr').forEach(row => {
+      const text = row.innerText.toLowerCase();
+      row.style.display = text.includes(query) ? '' : 'none';
+    });
+  }
+</script>
+
+</body>
+</html>

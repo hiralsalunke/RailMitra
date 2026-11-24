@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RailMitra — Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-deep:#060b18;
+    --navy-mid:#0d1830;
+    --navy-panel:#111f3f;
+    --blue-primary:#2f6fed;
+    --blue-bright:#5b8dff;
+    --cyan-glow:#4fd8ff;
+    --amber-signal:#ffb020;
+    --green-ok:#3ddc97;
+    --red-alert:#ff4d4d;
+    --text-main:#eaf1ff;
+    --text-dim:#8ea1c7;
+    --border-soft:rgba(95,140,255,0.16);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 70% 50% at 10% 0%, rgba(47,111,237,0.14), transparent 60%),
+      linear-gradient(180deg, var(--navy-deep) 0%, var(--navy-mid) 100%);
+    font-family:'Inter', sans-serif;
+    color:var(--text-main);
+    padding:32px clamp(20px, 4vw, 56px);
+  }
+  header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; }
+  .logo{ display:flex; align-items:center; gap:10px; }
+  .logo .dot{ width:9px;height:9px;border-radius:50%; background:var(--amber-signal); box-shadow:0 0 10px 2px rgba(255,176,32,0.7); }
+  .logo span{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:20px; letter-spacing:-0.01em; }
+  .logo span b{ color:var(--cyan-glow); font-weight:700; }
+  .back-btn{
+    background:transparent; border:1px solid var(--border-soft); color:var(--text-dim);
+    padding:11px 20px; border-radius:10px; text-decoration:none;
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:14px;
+  }
+  .back-btn:hover{ background:rgba(47,111,237,0.08); color:var(--text-main); }
+
+  .stat-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:28px; }
+  .stat-card{
+    background:rgba(17,31,63,0.55); border:1px solid var(--border-soft); border-radius:14px;
+    padding:20px; backdrop-filter:blur(14px);
+    opacity:0; transform:translateY(10px); animation:cardIn .5s ease forwards;
+  }
+  .stat-card:nth-child(1){ animation-delay:.05s; }
+  .stat-card:nth-child(2){ animation-delay:.15s; }
+  .stat-card:nth-child(3){ animation-delay:.25s; }
+  .stat-card:nth-child(4){ animation-delay:.35s; }
+  @keyframes cardIn{ to{ opacity:1; transform:translateY(0); } }
+  .stat-card .label{ font-size:12.5px; color:var(--text-dim); margin-bottom:8px; }
+  .stat-card .value{ font-family:'Space Grotesk', sans-serif; font-size:28px; font-weight:700; }
+  .stat-card.trains .value{ color:var(--blue-bright); }
+  .stat-card.conflicts .value{ color:var(--amber-signal); }
+  .stat-card.delay .value{ color:#ff9a9a; }
+  .stat-card.station .value{ color:var(--cyan-glow); font-size:20px; }
+
+  .section{
+    background:rgba(17,31,63,0.55); border:1px solid var(--border-soft); border-radius:16px;
+    padding:24px; backdrop-filter:blur(14px); margin-bottom:20px;
+  }
+  .section h3{ font-family:'Space Grotesk', sans-serif; font-size:16px; margin-bottom:4px; }
+  .section .sub{ font-size:12.5px; color:var(--text-dim); margin-bottom:18px; }
+
+  .empty{ color:var(--text-dim); font-size:13px; text-align:center; padding:30px 0; }
+  .empty .icon{ font-size:26px; margin-bottom:8px; }
+
+  .attention-row{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    padding:14px 16px; border-radius:10px;
+    background:rgba(255,90,90,0.06); border:1px solid rgba(255,90,90,0.25);
+    margin-bottom:10px;
+  }
+  .attention-row:last-child{ margin-bottom:0; }
+  .attention-left .train{ font-weight:600; font-size:14px; }
+  .attention-left .meta{ font-size:12px; color:var(--text-dim); margin-top:2px; }
+  .attention-right{ text-align:right; flex-shrink:0; }
+  .attention-right .delay{ color:var(--amber-signal); font-weight:700; font-family:'Space Grotesk', sans-serif; font-size:15px; }
+  .priority-badge{
+    display:inline-block; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:10px; margin-top:4px;
+  }
+  .priority-badge.High{ background:rgba(255,90,90,0.15); color:#ff9a9a; }
+  .priority-badge.Medium{ background:rgba(255,176,32,0.15); color:var(--amber-signal); }
+  .priority-badge.Low{ background:rgba(61,220,151,0.15); color:var(--green-ok); }
+
+  .resolution-bars{ display:flex; flex-direction:column; gap:14px; }
+  .res-row .res-label{ display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px; }
+  .res-track{ height:12px; border-radius:6px; background:rgba(255,255,255,0.05); overflow:hidden; }
+  .res-fill{ height:100%; border-radius:6px; transition:width .6s ease; }
+  .res-fill.resolved{ background:linear-gradient(90deg, var(--green-ok), #2ba876); }
+  .res-fill.delay{ background:linear-gradient(90deg, var(--amber-signal), #d48800); }
+
+  .trouble-row{
+    display:flex; align-items:center; gap:14px; margin-bottom:12px;
+  }
+  .trouble-row:last-child{ margin-bottom:0; }
+  .trouble-label{ width:200px; flex-shrink:0; font-size:13px; }
+  .trouble-label b{ color:var(--text-main); }
+  .trouble-track{ flex:1; height:10px; border-radius:5px; background:rgba(255,255,255,0.05); overflow:hidden; }
+  .trouble-fill{ height:100%; border-radius:5px; background:linear-gradient(90deg, var(--blue-primary), var(--cyan-glow)); transition:width .6s ease; }
+  .trouble-count{ width:24px; text-align:right; font-size:12.5px; color:var(--text-dim); flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="dot"></span>
+    <span>Rail<b>Mitra</b></span>
+  </div>
+  <a href="/dashboard" class="back-btn">← Back to Dashboard</a>
+</header>
+
+<div class="stat-grid">
+  <div class="stat-card trains">
+    <div class="label">Total Trains Loaded</div>
+    <div class="value" data-count-target="{{ total_trains }}" data-suffix="">0</div>
+  </div>
+  <div class="stat-card conflicts">
+    <div class="label">Active Conflicts</div>
+    <div class="value" data-count-target="{{ total_conflicts }}" data-suffix="">0</div>
+  </div>
+  <div class="stat-card delay">
+    <div class="label">Avg. Predicted Delay</div>
+    <div class="value" data-count-target="{{ avg_delay }}" data-suffix=" min" data-decimals="1">0 min</div>
+  </div>
+  <div class="stat-card station">
+    <div class="label">Busiest Station</div>
+    <div class="value">{{ busiest_station }}</div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>⚡ Needs Attention Now</h3>
+  <div class="sub">Conflicts with no alternate platform — these will actually cause a delay unless acted on.</div>
+  {% if needs_attention and needs_attention|length > 0 %}
+    {% for c in needs_attention %}
+    <div class="attention-row">
+      <div class="attention-left">
+        <div class="train">{{ c.move_train_name }} ({{ c.move_train_number }})</div>
+        <div class="meta">{{ c.station_name }} · Platform {{ c.platform_number }} · {{ c.travel_date }}</div>
+        <span class="priority-badge {{ c.move_priority }}">{{ c.move_priority }} Priority</span>
+      </div>
+      <div class="attention-right">
+        <div class="delay">~{{ c.estimated_delay }} min</div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+  <div class="empty"><div class="icon">✅</div>No unresolved conflicts right now.</div>
+  {% endif %}
+</div>
+
+<div class="section">
+  <h3>✅ Resolution Breakdown</h3>
+  <div class="sub">Of all current conflicts, how many resolved automatically vs need a delay.</div>
+  {% if total_conflicts and total_conflicts > 0 %}
+  <div class="resolution-bars">
+    <div class="res-row">
+      <div class="res-label"><span>Auto-Resolved (platform switch)</span><b>{{ auto_resolved }}</b></div>
+      <div class="res-track"><div class="res-fill resolved" style="width:{{ (auto_resolved / max_resolution * 100) if max_resolution else 0 }}%;"></div></div>
+    </div>
+    <div class="res-row">
+      <div class="res-label"><span>Needs Delay (no platform free)</span><b>{{ needs_delay }}</b></div>
+      <div class="res-track"><div class="res-fill delay" style="width:{{ (needs_delay / max_resolution * 100) if max_resolution else 0 }}%;"></div></div>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty"><div class="icon">📭</div>No conflicts to show yet.</div>
+  {% endif %}
+</div>
+
+<div class="section">
+  <h3>🔁 Trouble Spots</h3>
+  <div class="sub">Platforms with the most conflicts right now — candidates for schedule redesign.</div>
+  {% if trouble_spots and trouble_spots|length > 0 %}
+    {% for t in trouble_spots %}
+    <div class="trouble-row">
+      <div class="trouble-label"><b>{{ t.station_name }}</b> · P{{ t.platform_number }}</div>
+      <div class="trouble-track"><div class="trouble-fill" style="width:{{ (t.cnt / max_trouble * 100) if max_trouble else 0 }}%;"></div></div>
+      <div class="trouble-count">{{ t.cnt }}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+  <div class="empty"><div class="icon">🎯</div>No recurring trouble spots — schedule looks clean.</div>
+  {% endif %}
+</div>
+
+<script>
+  document.querySelectorAll('[data-count-target]').forEach(el => {
+    const target = parseFloat(el.dataset.countTarget) || 0;
+    const suffix = el.dataset.suffix || '';
+    const decimals = parseInt(el.dataset.decimals || '0', 10);
+    const duration = 900;
+    const start = performance.now();
+    function frame(now){
+      const t = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      const current = target * ease;
+      el.textContent = current.toFixed(decimals) + suffix;
+      if (t < 1) requestAnimationFrame(frame);
+      else el.textContent = target.toFixed(decimals) + suffix;
+    }
+    requestAnimationFrame(frame);
+  });
+</script>
+
+</body>
+</html>

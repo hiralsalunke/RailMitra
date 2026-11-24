@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RailMitra — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-deep:#060b18;
+    --navy-mid:#0d1830;
+    --navy-panel:#111f3f;
+    --blue-primary:#2f6fed;
+    --blue-bright:#5b8dff;
+    --cyan-glow:#4fd8ff;
+    --amber-signal:#ffb020;
+    --green-ok:#3ddc97;
+    --text-main:#eaf1ff;
+    --text-dim:#8ea1c7;
+    --border-soft:rgba(95,140,255,0.16);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 70% 50% at 10% 0%, rgba(47,111,237,0.14), transparent 60%),
+      linear-gradient(180deg, var(--navy-deep) 0%, var(--navy-mid) 100%);
+    font-family:'Inter', sans-serif;
+    color:var(--text-main);
+    padding:32px clamp(20px, 4vw, 56px);
+  }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:32px;
+  }
+  .logo{
+    display:flex; align-items:center; gap:10px;
+  }
+  .logo .dot{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--amber-signal);
+    box-shadow:0 0 10px 2px rgba(255,176,32,0.7);
+  }
+  .logo span{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700; font-size:20px;
+    letter-spacing:-0.01em;
+  }
+  .logo span b{ color:var(--cyan-glow); font-weight:700; }
+
+  .import-btn{
+    background:linear-gradient(120deg, var(--blue-primary), #2452c7);
+    color:#fff; border:none; padding:11px 20px; border-radius:10px;
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:14px;
+    cursor:pointer; display:flex; align-items:center; gap:8px;
+    box-shadow:0 8px 20px rgba(47,111,237,0.3);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .import-btn:hover{ transform:translateY(-1px); box-shadow:0 10px 24px rgba(47,111,237,0.4); }
+
+  .header-actions{ display:flex; gap:12px; }
+
+  .conflicts-btn{
+    position:relative;
+    background:rgba(255,176,32,0.08);
+    border:1px solid rgba(255,176,32,0.35);
+    color:var(--amber-signal);
+    padding:11px 20px; border-radius:10px;
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:14px;
+    cursor:pointer; display:flex; align-items:center; gap:8px;
+    transition:background .15s ease;
+  }
+  .conflicts-btn:hover{ background:rgba(255,176,32,0.15); }
+  .conflicts-btn .badge{
+    position:absolute; top:-6px; right:-6px;
+    background:#ff4d4d; color:#fff; font-size:11px; font-weight:700;
+    width:20px; height:20px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 3px var(--navy-mid);
+  }
+
+  .panel{
+    background:rgba(17,31,63,0.55);
+    border:1px solid var(--border-soft);
+    border-radius:16px;
+    backdrop-filter:blur(14px);
+    overflow:hidden;
+  }
+
+  .panel-head{
+    padding:20px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .panel-head h2{
+    font-family:'Space Grotesk', sans-serif; font-size:17px; font-weight:600;
+  }
+  .panel-head .count{
+    font-size:13px; color:var(--text-dim);
+  }
+
+  table{ width:100%; border-collapse:collapse; }
+  thead th{
+    text-align:left; padding:14px 24px;
+    font-size:11.5px; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--text-dim); font-weight:600;
+    border-bottom:1px solid var(--border-soft);
+  }
+  tbody td{
+    padding:16px 24px; font-size:14px;
+    border-bottom:1px solid rgba(95,140,255,0.08);
+  }
+  tbody tr:hover{ background:rgba(47,111,237,0.05); }
+  tbody tr:last-child td{ border-bottom:none; }
+
+  .train-name{ font-weight:600; }
+  .train-num{ color:var(--text-dim); font-size:12px; }
+  .route{ color:var(--cyan-glow); font-size:13.5px; }
+  .platform-chip{
+    display:inline-block; background:rgba(95,140,255,0.12);
+    border:1px solid var(--border-soft); color:var(--blue-bright);
+    padding:2px 9px; border-radius:6px; font-size:12px; margin-top:4px;
+  }
+
+  .status-chip{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:5px 12px; border-radius:20px; font-size:12.5px; font-weight:500;
+  }
+  .status-chip.ontime{ background:rgba(61,220,151,0.12); color:var(--green-ok); }
+  .status-chip.ontime::before{ content:""; width:6px;height:6px;border-radius:50%; background:var(--green-ok); }
+  .status-chip.delayed{ background:rgba(255,176,32,0.12); color:var(--amber-signal); }
+  .status-chip.delayed::before{ content:""; width:6px;height:6px;border-radius:50%; background:var(--amber-signal); }
+  .status-chip.pending{ background:rgba(95,140,255,0.12); color:var(--blue-bright); }
+  .status-chip.pending::before{ content:""; width:6px;height:6px;border-radius:50%; background:var(--blue-bright); }
+  .status-chip.arriving{ background:rgba(79,216,255,0.12); color:var(--cyan-glow); }
+  .status-chip.arriving::before{ content:""; width:6px;height:6px;border-radius:50%; background:var(--cyan-glow); }
+  .status-chip.departed{ background:rgba(142,161,199,0.12); color:var(--text-dim); }
+  .status-chip.departed::before{ content:""; width:6px;height:6px;border-radius:50%; background:var(--text-dim); }
+
+  .empty-state{
+    padding:60px 24px; text-align:center; color:var(--text-dim);
+  }
+  .empty-state p{ margin-top:8px; font-size:13.5px; }
+
+  .modal-overlay{
+    display:none; position:fixed; inset:0; z-index:10;
+    background:rgba(6,11,24,0.7); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center;
+  }
+  .modal-overlay.active{ display:flex; }
+  .modal-box{
+    background:var(--navy-panel);
+    border:1px solid var(--border-soft);
+    border-radius:16px;
+    padding:32px;
+    width:min(420px, 90vw);
+    box-shadow:0 30px 70px rgba(0,0,0,0.5);
+  }
+  .modal-box h3{
+    font-family:'Space Grotesk', sans-serif; font-size:18px; margin-bottom:6px;
+  }
+  .modal-box p{ font-size:13px; color:var(--text-dim); margin-bottom:20px; }
+  .file-drop{
+    border:1.5px dashed var(--border-soft);
+    border-radius:12px; padding:24px; text-align:center;
+    color:var(--text-dim); font-size:13px; margin-bottom:18px;
+  }
+  .file-drop input{ margin-top:10px; color:var(--text-dim); font-size:12.5px; }
+  .modal-actions{ display:flex; gap:10px; }
+  .modal-actions button{
+    flex:1; padding:11px; border-radius:9px; font-family:'Space Grotesk', sans-serif;
+    font-weight:600; font-size:13.5px; cursor:pointer; border:none;
+  }
+  .btn-cancel{ background:transparent; border:1px solid var(--border-soft); color:var(--text-dim); }
+  .btn-confirm{ background:linear-gradient(120deg, var(--blue-primary), #2452c7); color:#fff; }
+
+  .add-train-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px 16px;
+  }
+  .add-train-grid .field{ margin-bottom:0; }
+  .add-train-grid .field.full-width{ grid-column:1 / -1; }
+  .modal-box.wide{ width:min(560px, 94vw); }
+  .modal-header-icon{
+    width:38px; height:38px; border-radius:10px;
+    background:rgba(47,111,237,0.15);
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; margin-bottom:12px;
+  }
+
+  .field{ margin-bottom:20px; }
+  .field label{
+    display:block;
+    font-size:12.5px;
+    color:var(--text-dim);
+    font-weight:500;
+    margin-bottom:8px;
+    letter-spacing:0.03em;
+  }
+  .field input{
+    width:100%;
+    padding:12px 14px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border-soft);
+    border-radius:9px;
+    color:var(--text-main);
+    font-size:14px;
+    font-family:'Inter', sans-serif;
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .field input::placeholder{ color:#5c6d8f; }
+  .field input:focus{
+    outline:none;
+    border-color:var(--blue-bright);
+    background:rgba(47,111,237,0.06);
+    box-shadow:0 0 0 4px rgba(47,111,237,0.15);
+  }
+  .field input[type="date"]::-webkit-calendar-picker-indicator,
+  .field input[type="time"]::-webkit-calendar-picker-indicator{
+    filter:invert(0.7);
+    cursor:pointer;
+  }
+
+  .day-selector{
+    display:flex; gap:8px; flex-wrap:wrap;
+    padding:16px 24px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .day-chip{
+    padding:8px 16px; border-radius:8px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border-soft);
+    color:var(--text-dim);
+    font-family:'Space Grotesk', sans-serif; font-size:13px; font-weight:600;
+    text-decoration:none;
+    transition:background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .day-chip:hover{ background:rgba(47,111,237,0.1); color:var(--text-main); }
+  .day-chip.active{
+    background:linear-gradient(120deg, var(--blue-primary), #2452c7);
+    border-color:transparent;
+    color:#fff;
+  }
+
+  .filter-bar{
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+    padding:14px 24px; border-bottom:1px solid var(--border-soft);
+  }
+  .filter-bar select, .filter-bar input{
+    padding:9px 12px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border-soft);
+    border-radius:8px;
+    color:var(--text-main);
+    font-size:13px;
+    font-family:'Inter', sans-serif;
+  }
+  .filter-bar select option{
+    background-color:var(--navy-panel);
+    color:var(--text-main);
+  }
+  .filter-bar button{
+    padding:9px 16px; border-radius:8px; border:none;
+    background:linear-gradient(120deg, var(--blue-primary), #2452c7);
+    color:#fff; font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:13px;
+    cursor:pointer;
+  }
+  .filter-bar .clear-filter{
+    color:var(--text-dim); font-size:12.5px; text-decoration:none;
+  }
+
+  .clear-btn{
+    background:transparent;
+    border:1px solid rgba(255,90,90,0.35);
+    color:#ff9a9a;
+    padding:11px 18px; border-radius:10px;
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:14px;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .clear-btn:hover{ background:rgba(255,90,90,0.1); }
+
+  .dropdown{ position:relative; display:inline-block; }
+  .dropdown-toggle{
+    background:transparent; border:1px solid var(--border-soft); color:var(--text-dim);
+    padding:11px 18px; border-radius:10px;
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:14px;
+    cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    transition:background .15s ease;
+  }
+  .dropdown-toggle:hover{ background:rgba(47,111,237,0.08); color:var(--text-main); }
+  .dropdown-toggle .caret{ font-size:10px; transition:transform .15s ease; }
+  .dropdown.open .dropdown-toggle .caret{ transform:rotate(180deg); }
+
+  .dropdown-menu{
+    display:none;
+    position:absolute; top:calc(100% + 8px); right:0; z-index:50;
+    background:var(--navy-panel);
+    border:1px solid var(--border-soft);
+    border-radius:12px;
+    padding:6px;
+    min-width:200px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.5);
+  }
+  .dropdown.open .dropdown-menu{ display:block; }
+
+  .dropdown-item{
+    display:flex; align-items:center; gap:10px;
+    width:100%; padding:10px 12px; border-radius:8px;
+    background:none; border:none; text-decoration:none;
+    color:var(--text-main); font-family:'Inter', sans-serif; font-size:13.5px;
+    cursor:pointer; text-align:left;
+  }
+  .dropdown-item:hover{ background:rgba(47,111,237,0.1); }
+  .dropdown-item.danger{ color:#ff9a9a; }
+  .dropdown-item.danger:hover{ background:rgba(255,90,90,0.1); }
+  .dropdown-divider{ height:1px; background:var(--border-soft); margin:6px 4px; }
+
+  .search-wrap{ padding:16px 24px; border-bottom:1px solid var(--border-soft); }
+  .search-wrap input{
+    width:100%;
+    padding:11px 14px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border-soft);
+    border-radius:9px;
+    color:var(--text-main);
+    font-size:14px;
+    font-family:'Inter', sans-serif;
+  }
+  .search-wrap input::placeholder{ color:#5c6d8f; }
+  .search-wrap input:focus{
+    outline:none;
+    border-color:var(--blue-bright);
+    box-shadow:0 0 0 4px rgba(47,111,237,0.15);
+  }
+
+  .new-badge{
+    display:inline-block;
+    background:rgba(79,216,255,0.15);
+    color:var(--cyan-glow);
+    font-size:10px; font-weight:700;
+    padding:2px 7px; border-radius:5px;
+    margin-left:8px;
+    letter-spacing:0.03em;
+    vertical-align:middle;
+  }
+
+  .toast-notif{
+    position:fixed; top:24px; right:24px; z-index:1000;
+    background:linear-gradient(135deg, rgba(17,31,63,0.98), rgba(13,24,48,0.98));
+    border:1px solid rgba(255,176,32,0.5);
+    border-left:5px solid var(--amber-signal);
+    border-radius:12px;
+    padding:16px 20px;
+    color:var(--text-main);
+    font-size:14px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,176,32,0.1);
+    animation:slideIn .35s cubic-bezier(0.34, 1.56, 0.64, 1), pulseGlow 1.8s ease-in-out 2;
+    max-width:340px;
+    backdrop-filter:blur(10px);
+  }
+  .toast-notif b{ color:var(--amber-signal); }
+  @keyframes slideIn{
+    from{ transform:translateX(140%); opacity:0; }
+    to{ transform:translateX(0); opacity:1; }
+  }
+  @keyframes pulseGlow{
+    0%, 100%{ box-shadow:0 20px 50px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,176,32,0.1); }
+    50%{ box-shadow:0 20px 50px rgba(0,0,0,0.55), 0 0 0 5px rgba(255,176,32,0.25); }
+  }
+
+  .qr-item{
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border-soft);
+    border-radius:9px;
+    padding:12px 14px;
+    margin-bottom:8px;
+    font-size:13px;
+  }
+
+  /* ---- Ask chat modal ---- */
+  .chat-bubble{
+    max-width:88%;
+    padding:10px 14px;
+    border-radius:14px;
+    font-size:13.5px;
+    line-height:1.55;
+  }
+  .chat-bubble.user{
+    align-self:flex-end;
+    background:linear-gradient(120deg, var(--blue-primary), #2452c7);
+    color:#fff;
+    border-radius:14px 14px 4px 14px;
+  }
+  .chat-bubble.assistant{
+    align-self:flex-start;
+    background:rgba(255,255,255,0.04);
+    border:1px solid var(--border-soft);
+    color:var(--text-main);
+    border-radius:14px 14px 14px 4px;
+  }
+  .chat-result-card{
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border-soft);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:12px;
+    margin-top:6px;
+  }
+  .chat-result-card b{ font-size:12.5px; }
+  .chat-result-meta{ color:var(--text-dim); margin-top:2px; }
+  .chat-suggestion-chip{
+    padding:7px 12px;
+    border-radius:20px;
+    border:1px solid var(--border-soft);
+    background:rgba(79,216,255,0.06);
+    color:var(--cyan-glow);
+    font-size:12px;
+    cursor:pointer;
+    text-align:left;
+    font-family:'Inter', sans-serif;
+  }
+  .chat-suggestion-chip:hover{ background:rgba(79,216,255,0.14); }
+  .chat-typing{
+    align-self:flex-start;
+    color:var(--text-dim);
+    font-size:13px;
+    letter-spacing:2px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="dot"></span>
+    <span>Rail<b>Mitra</b></span>
+  </div>
+  <div class="header-actions">
+    <button class="import-btn" style="background:transparent; border:1px solid rgba(79,216,255,0.35); color:var(--cyan-glow); box-shadow:none;" onclick="openAskModal()">
+      🔍 Ask
+    </button>
+
+    <button class="conflicts-btn" onclick="document.getElementById('conflictsModal').classList.add('active')">
+      ⚠ Conflicts
+      {% if conflicts and conflicts|length > 0 %}
+      <span class="badge" data-count-target="{{ conflicts|length }}" data-suffix="">0</span>
+      {% endif %}
+    </button>
+
+    <div class="dropdown" id="addDataDropdown">
+      <button class="import-btn dropdown-toggle" style="background:linear-gradient(120deg, var(--blue-primary), #2452c7); color:#fff; border:none;" onclick="toggleDropdown('addDataDropdown')">
+        + Add Data <span class="caret">▾</span>
+      </button>
+      <div class="dropdown-menu">
+        <button type="button" class="dropdown-item" onclick="closeDropdowns(); document.getElementById('addTrainModal').classList.add('active')">✏️ Add Single Train</button>
+        <button type="button" class="dropdown-item" onclick="closeDropdowns(); document.getElementById('importModal').classList.add('active')">📁 Import Excel</button>
+        <button type="button" class="dropdown-item" onclick="closeDropdowns(); document.getElementById('autoScheduleModal').classList.add('active')">🧠 Auto-Schedule Import</button>
+      </div>
+    </div>
+
+    <div class="dropdown" id="moreDropdown">
+      <button class="dropdown-toggle" onclick="toggleDropdown('moreDropdown')">
+        ☰ More <span class="caret">▾</span>
+      </button>
+      <div class="dropdown-menu">
+        <a href="/analytics" class="dropdown-item">📊 Analytics</a>
+        <a href="/track_train" class="dropdown-item">🛰️ Track Live</a>
+        <a href="/conflict_history" class="dropdown-item">🕘 Conflict History</a>
+        <div class="dropdown-divider"></div>
+        <a href="/logout" class="dropdown-item">↪ Logout</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="panel">
+  {% if import_error %}
+  <div id="importErrorBanner" style="background:rgba(255,90,90,0.1); border-bottom:1px solid rgba(255,90,90,0.3); padding:14px 24px; color:#ff9a9a; font-size:13.5px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+    <span>⚠ Import failed: {{ import_error }}</span>
+    <span onclick="document.getElementById('importErrorBanner').remove()" style="cursor:pointer; font-size:18px; line-height:1; color:#ff9a9a; flex-shrink:0;">×</span>
+  </div>
+  {% endif %}
+  <div class="panel-head">
+    <h2>{% if selected_day %}{{ selected_day }} Schedule{% else %}Imported / Added Trains{% endif %}</h2>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span class="count" data-count-target="{{ trains|length }}" data-suffix=" trains">0 trains</span>
+      <a href="/export_report?{% if selected_date %}date={{ selected_date }}{% elif selected_day %}day={{ selected_day }}{% endif %}" style="text-decoration:none; padding:8px 14px; font-size:13px; border:1px solid var(--border-soft); border-radius:8px; color:var(--text-dim); font-family:'Space Grotesk', sans-serif; font-weight:600;">⬇ Export{% if selected_date %} {{ selected_date }}{% elif selected_day %} {{ selected_day }}{% endif %}</a>
+    </div>
+  </div>
+
+  <div class="day-selector">
+    {% for d in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
+    <a href="/dashboard?day={{ d }}" class="day-chip {% if selected_day == d %}active{% endif %}">{{ d[:3] }}</a>
+    {% endfor %}
+  </div>
+
+  {% if station_risk and station_risk|length > 0 %}
+  <div style="display:flex; gap:8px; flex-wrap:wrap; padding:12px 24px; border-bottom:1px solid var(--border-soft); align-items:center;">
+    <span style="font-size:11.5px; color:var(--text-dim); letter-spacing:0.03em; margin-right:4px;">🎯 STATION RISK</span>
+    {% for s in station_risk %}
+    <span style="display:inline-flex; align-items:center; gap:5px; font-size:12px; padding:4px 10px; border-radius:20px;
+      {% if s.risk == 'High' %}background:rgba(255,90,90,0.12); color:#ff9a9a;
+      {% elif s.risk == 'Medium' %}background:rgba(255,176,32,0.12); color:var(--amber-signal);
+      {% else %}background:rgba(61,220,151,0.12); color:var(--green-ok);{% endif %}">
+      {{ s.station_name }} · {{ s.risk }}
+    </span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="get" action="/dashboard" class="filter-bar">
+    <input type="text" name="from_station" list="stationOptions" placeholder="From station" value="{{ selected_from_station or '' }}">
+    <input type="text" name="to_station" list="stationOptions" placeholder="To station" value="{{ selected_to_station or '' }}">
+    <datalist id="stationOptions">
+      {% for st in all_stations %}
+      <option value="{{ st }}">
+      {% endfor %}
+    </datalist>
+    <input type="date" name="date" value="{{ selected_date or '' }}">
+    <select name="hour">
+      <option value="">Any Time</option>
+      {% for h in range(0, 24) %}
+      <option value="{{ h }}" {% if selected_hour == h %}selected{% endif %}>{{ "%02d:00"|format(h) }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Filter</button>
+    {% if selected_date or selected_from_station or selected_to_station or selected_hour is not none %}
+    <a href="/dashboard" class="clear-filter">Clear filters</a>
+    {% endif %}
+  </form>
+  <div style="display:flex; gap:10px; padding:0 24px 14px;">
+    <form action="/clear_data" method="post" onsubmit="return confirm('Clear imported/manually-added trains?');">
+      <button type="submit" style="padding:8px 14px; border-radius:8px; border:1px solid rgba(255,90,90,0.35); background:rgba(255,90,90,0.08); color:#ff9a9a; font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:12.5px; cursor:pointer;">🗑️ Clear Imported Data</button>
+    </form>
+    <form action="/clear_fetched" method="post" onsubmit="return confirm('Clear real trains fetched from RailRadar?');">
+      <button type="submit" style="padding:8px 14px; border-radius:8px; border:1px solid rgba(255,90,90,0.35); background:rgba(255,90,90,0.08); color:#ff9a9a; font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:12.5px; cursor:pointer;">🛰️ Clear Fetched Data</button>
+    </form>
+  </div>
+
+  <div class="search-wrap">
+    <input type="text" id="trainSearch" placeholder="Search by train number or name..." onkeyup="filterTrains()">
+  </div>
+
+  {% if trains and trains|length > 0 %}
+  <table>
+    <thead>
+      <tr>
+        <th>Train</th>
+        <th>Station</th>
+        <th>Route</th>
+        <th>Platform</th>
+        <th>Arrival</th>
+        <th>Departure</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in trains %}
+      <tr>
+        <td>
+          <div class="train-name">{{ t.train_name }}{% if not t.is_base_schedule %}<span class="new-badge">NEW</span>{% endif %}</div>
+          <div class="train-num">{{ t.train_number }}</div>
+        </td>
+        <td>{{ t.station_name }}</td>
+        <td class="route">{{ t.source_station }} → {{ t.destination_station }}</td>
+        <td><span class="platform-chip">P{{ t.platform_number }}</span></td>
+        <td>{{ t.scheduled_arrival }}</td>
+        <td>{{ t.scheduled_departure }}</td>
+        <td>{{ t.travel_date }}</td>
+        <td>
+          {% if t.status == 'On Time' %}
+          <span class="status-chip ontime">On Time</span>
+          {% elif t.status == 'Reassignment Suggested' %}
+          <span class="status-chip pending">Reassignment Suggested</span>
+          {% elif t.status == 'Arriving Soon' %}
+          <span class="status-chip arriving">Arriving Soon</span>
+          {% elif t.status == 'Departed' %}
+          <span class="status-chip departed">Departed</span>
+          {% else %}
+          <span class="status-chip delayed">Delayed {{ t.delay_minutes }} min</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/track_train?train_number={{ t.train_number }}&date={{ t.travel_date }}" style="text-decoration:none; color:var(--cyan-glow); font-size:15px; margin-right:8px;" title="Track Live">🛰️</a>
+          <button type="button" onclick="openEditModal('{{ t.id }}','{{ t.train_number }}','{{ t.train_name }}','{{ t.station_name }}','{{ t.source_station }}','{{ t.destination_station }}','{{ t.platform_number }}','{{ t.scheduled_arrival }}','{{ t.scheduled_departure }}','{{ t.travel_date }}')" style="background:none; border:none; color:var(--blue-bright); cursor:pointer; font-size:15px; margin-right:8px;" title="Edit">✏️</button>
+          <button type="button" onclick="openDeleteModal('{{ t.id }}', '{{ selected_day if selected_day else '' }}')" style="background:none; border:none; color:#ff9a9a; cursor:pointer; font-size:15px;" title="Delete">🗑️</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <div style="font-size:32px;">🚆</div>
+    {% if selected_day %}
+    <p>No trains scheduled for {{ selected_day }}.</p>
+    {% else %}
+    <p>No imported/added trains yet — use Import or Add Train above, or pick a day to see the base schedule.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="modal-overlay" id="conflictsModal">
+  <div class="modal-box" style="width:min(680px, 94vw); max-height:85vh; overflow-y:auto;">
+    <h3 style="color:var(--amber-signal);">⚠ Conflict Detection &amp; Recommendation</h3>
+    <p>{{ conflicts|length if conflicts else 0 }} conflict(s) found across your imported schedule.</p>
+
+    {% if conflicts and conflicts|length > 0 %}
+      {% for c in conflicts %}
+      <div style="background:rgba(17,31,63,0.6); border:1px solid rgba(255,176,32,0.3); border-radius:12px; padding:18px; margin-bottom:16px;">
+
+        <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:12px; align-items:center; margin-bottom:14px;">
+          <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-soft); border-radius:10px; padding:12px;">
+            <div class="train-num">Train No: {{ c.train_1_number }}</div>
+            <div class="train-name" style="margin:2px 0 6px;">{{ c.train_1_name }}</div>
+            <span class="platform-chip" style="{% if c.train_1_priority == 'High' %}color:#ff9a9a; border-color:rgba(255,90,90,0.4); background:rgba(255,90,90,0.1);{% endif %}">{{ c.train_1_priority }} Priority</span>
+          </div>
+          <div style="width:30px; height:30px; border-radius:50%; background:#ff4d4d; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;">VS</div>
+          <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-soft); border-radius:10px; padding:12px;">
+            <div class="train-num">Train No: {{ c.train_2_number }}</div>
+            <div class="train-name" style="margin:2px 0 6px;">{{ c.train_2_name }}</div>
+            <span class="platform-chip" style="{% if c.train_2_priority == 'High' %}color:#ff9a9a; border-color:rgba(255,90,90,0.4); background:rgba(255,90,90,0.1);{% endif %}">{{ c.train_2_priority }} Priority</span>
+          </div>
+        </div>
+
+        <div style="font-size:12.5px; color:var(--text-dim); margin-bottom:12px;">
+          <span class="platform-chip">{{ c.station_name }} · P{{ c.platform_number }}</span>
+          &nbsp; {{ c.train_1_arrival }}–{{ c.train_1_departure }} vs {{ c.train_2_arrival }}–{{ c.train_2_departure }}
+        </div>
+
+        <div style="background:rgba(61,220,151,0.06); border:1px solid rgba(61,220,151,0.3); border-radius:10px; padding:14px 16px;">
+          <div style="color:var(--green-ok); font-weight:600; font-size:13.5px; margin-bottom:6px;">🤖 AI Recommendation</div>
+          <div style="font-size:13.5px; color:var(--text-main); line-height:1.6;">{{ c.suggestion }}</div>
+
+          <div style="display:flex; gap:16px; margin-top:12px; flex-wrap:wrap;">
+            <div style="font-size:12px; color:var(--text-dim);">Suggested Platform<br>
+              <b style="color:var(--text-main); font-size:14px;">{{ c.suggested_platform if c.suggested_platform else "—" }}</b>
+            </div>
+            <div style="font-size:12px; color:var(--text-dim);">Estimated Delay<br>
+              <b style="color:var(--text-main); font-size:14px;">{{ c.estimated_delay }} mins</b>
+            </div>
+          </div>
+
+          {% if c.suggested_platform %}
+          <form action="/apply_recommendation/{{ c.conflict_id }}" method="post" style="margin-top:12px;">
+            <button type="submit" class="submit-btn" style="padding:9px; font-size:13px;">✓ Apply Recommendation</button>
+          </form>
+          {% endif %}
+        </div>
+
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state" style="padding:30px 10px;">
+        <div style="font-size:28px;">✅</div>
+        <p>No conflicts right now.</p>
+      </div>
+    {% endif %}
+
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" onclick="document.getElementById('conflictsModal').classList.remove('active')" style="flex:none; width:100%;">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addTrainModal">
+  <div class="modal-box wide">
+    <div class="modal-header-icon">🚆</div>
+    <h3>Add Single Train</h3>
+    <p>Adds one train and checks it against that date's schedule for conflicts.</p>
+    <form action="/add_train" method="post">
+      <div class="add-train-grid">
+        <div class="field">
+          <label>Train Number</label>
+          <input type="text" name="train_number" placeholder="e.g. 12951" required>
+        </div>
+        <div class="field">
+          <label>Train Name</label>
+          <input type="text" name="train_name" placeholder="e.g. Rajdhani Express" required>
+        </div>
+
+        <div class="field full-width">
+          <label>Station Name</label>
+          <input type="text" name="station_name" placeholder="e.g. Ahmedabad Junction" required>
+        </div>
+
+        <div class="field">
+          <label>Source Station</label>
+          <input type="text" name="source_station" placeholder="e.g. Delhi" required>
+        </div>
+        <div class="field">
+          <label>Destination Station</label>
+          <input type="text" name="destination_station" placeholder="e.g. Mumbai" required>
+        </div>
+
+        <div class="field">
+          <label>Platform Number</label>
+          <input type="number" name="platform_number" placeholder="e.g. 3" required>
+        </div>
+        <div class="field">
+          <label>Travel Date</label>
+          <input type="date" name="travel_date" required>
+        </div>
+
+        <div class="field">
+          <label>Scheduled Arrival</label>
+          <input type="time" name="scheduled_arrival" step="1" required>
+        </div>
+        <div class="field">
+          <label>Scheduled Departure</label>
+          <input type="time" name="scheduled_departure" step="1" required>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:20px;">
+        <button type="button" class="btn-cancel" onclick="document.getElementById('addTrainModal').classList.remove('active')">Cancel</button>
+        <button type="submit" class="btn-confirm">Add Train</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editTrainModal">
+  <div class="modal-box wide">
+    <div class="modal-header-icon">✏️</div>
+    <h3>Edit Train</h3>
+    <p>Updates this train and rechecks conflicts for its date.</p>
+    <form id="editTrainForm" method="post">
+      <div class="add-train-grid">
+        <div class="field">
+          <label>Train Number</label>
+          <input type="text" name="train_number" id="edit_train_number" required>
+        </div>
+        <div class="field">
+          <label>Train Name</label>
+          <input type="text" name="train_name" id="edit_train_name" required>
+        </div>
+        <div class="field full-width">
+          <label>Station Name</label>
+          <input type="text" name="station_name" id="edit_station_name" required>
+        </div>
+        <div class="field">
+          <label>Source Station</label>
+          <input type="text" name="source_station" id="edit_source_station" required>
+        </div>
+        <div class="field">
+          <label>Destination Station</label>
+          <input type="text" name="destination_station" id="edit_destination_station" required>
+        </div>
+        <div class="field">
+          <label>Platform Number</label>
+          <input type="number" name="platform_number" id="edit_platform_number" required>
+        </div>
+        <div class="field">
+          <label>Travel Date</label>
+          <input type="date" name="travel_date" id="edit_travel_date" required>
+        </div>
+        <div class="field">
+          <label>Scheduled Arrival</label>
+          <input type="time" name="scheduled_arrival" id="edit_scheduled_arrival" step="1" required>
+        </div>
+        <div class="field">
+          <label>Scheduled Departure</label>
+          <input type="time" name="scheduled_departure" id="edit_scheduled_departure" step="1" required>
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top:20px;">
+        <button type="button" class="btn-cancel" onclick="document.getElementById('editTrainModal').classList.remove('active')">Cancel</button>
+        <button type="submit" class="btn-confirm">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="deleteTrainModal">
+  <div class="modal-box">
+    <div class="modal-header-icon" style="background:rgba(255,90,90,0.15);">🗑️</div>
+    <h3 style="color:#ff9a9a;">Delete This Train?</h3>
+    <p>This removes it permanently and rechecks conflicts for that date.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" onclick="document.getElementById('deleteTrainModal').classList.remove('active')">Cancel</button>
+      <form id="deleteTrainForm" method="post" style="flex:1;">
+        <input type="hidden" name="day" id="delete_day_field">
+        <button type="submit" style="width:100%; padding:11px; border-radius:9px; font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:13.5px; cursor:pointer; border:none; background:linear-gradient(120deg, #ff4d4d, #d43333); color:#fff;">Yes, Delete It</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="smartQueryModal">
+  <div class="modal-box" style="width:min(560px, 94vw); max-height:85vh; display:flex; flex-direction:column; padding:0;">
+    <div style="padding:20px 24px 14px; border-bottom:1px solid var(--border-soft); display:flex; align-items:center; gap:10px;">
+      <div class="modal-header-icon" style="background:rgba(79,216,255,0.15); margin-bottom:0;">🔍</div>
+      <div>
+        <h3 style="color:var(--cyan-glow); margin-bottom:2px;">Ask RailMitra</h3>
+        <p style="margin-bottom:0; font-size:12px;">Ask about timing, trains, or conflicts.</p>
+      </div>
+      <span onclick="closeAskModal()" style="margin-left:auto; cursor:pointer; font-size:20px; color:var(--text-dim); line-height:1;">×</span>
+    </div>
+
+    <div id="chatMessages" style="flex:1; overflow-y:auto; padding:18px 20px; display:flex; flex-direction:column; gap:12px; min-height:280px;"></div>
+
+    <div id="chatSuggestions" style="padding:0 20px 12px; display:flex; flex-wrap:wrap; gap:8px;"></div>
+
+    <div style="padding:14px 20px 20px; border-top:1px solid var(--border-soft); display:flex; gap:8px;">
+      <input type="text" id="smartQueryInput" placeholder="Type your question..." autocomplete="off"
+        style="flex:1; padding:12px 14px; background:rgba(255,255,255,0.03); border:1px solid var(--border-soft); border-radius:9px; color:var(--text-main); font-size:14px; font-family:'Inter', sans-serif;">
+      <button type="button" id="chatSendBtn" style="padding:0 20px; border-radius:9px; border:none; background:linear-gradient(120deg, var(--cyan-glow), #2fa8c9); color:#062018; font-family:'Space Grotesk', sans-serif; font-weight:600; cursor:pointer;">Ask</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="autoScheduleModal">
+  <div class="modal-box">
+    <div class="modal-header-icon" style="background:rgba(61,220,151,0.15);">🧠</div>
+    <h3 style="color:var(--green-ok);">Auto-Schedule Import</h3>
+    <p>Upload trains <b>without a platform number</b> — the system will automatically find the best conflict-free platform for each one based on the existing schedule.</p>
+    <form action="/import_auto_schedule" method="post" enctype="multipart/form-data">
+      <div class="file-drop">
+        Select a schedule file (no platform_number column needed)
+        <br>
+        <input type="file" name="file" accept=".xlsx" required>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="document.getElementById('autoScheduleModal').classList.remove('active')">Cancel</button>
+        <button type="submit" style="flex:1; padding:11px; border-radius:9px; font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:13.5px; cursor:pointer; border:none; background:linear-gradient(120deg, var(--green-ok), #2ba876); color:#062018;">Auto-Schedule</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="importModal">
+  <div class="modal-box">
+    <h3>Import Train Schedule</h3>
+    <p>Upload an Excel file (.xlsx) with train schedule data.</p>
+    <form action="/import" method="post" enctype="multipart/form-data">
+      <div class="file-drop">
+        Select your schedule file
+        <br>
+        <input type="file" name="file" accept=".xlsx" required>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="document.getElementById('importModal').classList.remove('active')">Cancel</button>
+        <button type="submit" class="btn-confirm">Import</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function filterTrains(){
+    const query = document.getElementById('trainSearch').value.toLowerCase();
+    document.querySelectorAll('tbody tr').forEach(row => {
+      const text = row.innerText.toLowerCase();
+      row.style.display = text.includes(query) ? '' : 'none';
+    });
+  }
+
+  function toggleDropdown(id){
+    const dropdown = document.getElementById(id);
+    const wasOpen = dropdown.classList.contains('open');
+    closeDropdowns();
+    if(!wasOpen){ dropdown.classList.add('open'); }
+  }
+
+  function closeDropdowns(){
+    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+  }
+
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('.dropdown')){ closeDropdowns(); }
+  });
+
+  function openEditModal(id, trainNumber, trainName, stationName, sourceStation, destStation, platform, arrival, departure, travelDate){
+    document.getElementById('edit_train_number').value = trainNumber;
+    document.getElementById('edit_train_name').value = trainName;
+    document.getElementById('edit_station_name').value = stationName;
+    document.getElementById('edit_source_station').value = sourceStation;
+    document.getElementById('edit_destination_station').value = destStation;
+    document.getElementById('edit_platform_number').value = platform;
+    document.getElementById('edit_scheduled_arrival').value = arrival;
+    document.getElementById('edit_scheduled_departure').value = departure;
+    document.getElementById('edit_travel_date').value = travelDate;
+    document.getElementById('editTrainForm').action = '/edit_train/' + id;
+    document.getElementById('editTrainModal').classList.add('active');
+  }
+
+  function openDeleteModal(id, day){
+    document.getElementById('deleteTrainForm').action = '/delete_train/' + id;
+    document.getElementById('delete_day_field').value = day;
+    document.getElementById('deleteTrainModal').classList.add('active');
+  }
+
+  (function(){
+    const currentCount = {{ conflicts|length if conflicts else 0 }};
+    const prevCount = parseInt(sessionStorage.getItem('railmitra_prev_conflicts') || '0');
+    if(currentCount > prevCount){
+      const toast = document.createElement('div');
+      toast.className = 'toast-notif';
+      toast.innerHTML = `
+        <div style="display:flex; align-items:flex-start; gap:10px;">
+          <span style="font-size:20px;">⚠</span>
+          <div style="flex:1;">
+            <div style="font-weight:700; margin-bottom:2px;">New Conflict Detected</div>
+            <div style="font-size:12.5px; color:var(--text-dim);"><b>${currentCount - prevCount}</b> new conflict(s) found in the schedule.</div>
+          </div>
+          <span onclick="this.closest('.toast-notif').remove()" style="cursor:pointer; color:var(--text-dim); font-size:16px; line-height:1;">×</span>
+        </div>`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 7000);
+    }
+    sessionStorage.setItem('railmitra_prev_conflicts', currentCount);
+  })();
+
+  document.querySelectorAll('[data-count-target]').forEach(el => {
+    const target = parseFloat(el.dataset.countTarget) || 0;
+    const suffix = el.dataset.suffix || '';
+    const duration = 700;
+    const start = performance.now();
+    function frame(now){
+      const t = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(target * ease) + suffix;
+      if (t < 1) requestAnimationFrame(frame);
+      else el.textContent = Math.round(target) + suffix;
+    }
+    requestAnimationFrame(frame);
+  });
+
+  /* ================= Ask chat modal ================= */
+  const ALL_SUGGESTIONS = [
+    "How many trains are delayed?",
+    "How many trains does Ahmedabad have?",
+    "How many conflicts are there on Monday?",
+    "Show on time trains at Mumbai Central",
+    "Show trains at Surat",
+    "Show 10 AM trains"
+  ];
+
+  let chatStarted = false;
+
+  function openAskModal(){
+    document.getElementById('smartQueryModal').classList.add('active');
+    if(!chatStarted){
+      chatStarted = true;
+      addChatBubble('assistant', "Hello! I'm the RailMitra assistant. Ask me anything about train timing, delays, or conflicts.");
+      renderChatSuggestions('');
+    }
+    setTimeout(() => document.getElementById('smartQueryInput').focus(), 50);
+  }
+
+  function closeAskModal(){
+    document.getElementById('smartQueryModal').classList.remove('active');
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.innerText = str;
+    return d.innerHTML;
+  }
+
+  function addChatBubble(role, text, resultsHtml){
+    const container = document.getElementById('chatMessages');
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble ' + role;
+    bubble.innerHTML = escapeHtml(text) + (resultsHtml || '');
+    container.appendChild(bubble);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function renderChatSuggestions(inputVal){
+    const box = document.getElementById('chatSuggestions');
+    const q = (inputVal || '').trim().toLowerCase();
+    const list = q
+      ? ALL_SUGGESTIONS.filter(s => s.toLowerCase().includes(q)).slice(0, 4)
+      : ALL_SUGGESTIONS.slice(0, 4);
+    box.innerHTML = '';
+    list.forEach(s => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chat-suggestion-chip';
+      chip.textContent = s;
+      chip.onclick = function(){
+        document.getElementById('smartQueryInput').value = s;
+        sendChatQuery();
+      };
+      box.appendChild(chip);
+    });
+  }
+
+  function buildResultsHtml(intent, results){
+    if(!results || results.length === 0) return '';
+    let html = '<div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">';
+    results.slice(0, 6).forEach(r => {
+      if(intent === 'conflicts'){
+        html += `<div class="chat-result-card">
+          <b>${escapeHtml(r.train_1_name || '')}</b> vs <b>${escapeHtml(r.train_2_name || '')}</b>
+          <div class="chat-result-meta">${escapeHtml(r.station_name || '')} · P${escapeHtml(r.platform_number || '')} · ${escapeHtml(r.travel_date || '')}</div>
+        </div>`;
+      } else {
+        html += `<div class="chat-result-card">
+          <b>${escapeHtml(r.train_name || '')}</b> ${r.train_number ? '(' + escapeHtml(r.train_number) + ')' : ''}
+          <div class="chat-result-meta">${escapeHtml(r.station_name || '')} · ${escapeHtml((r.scheduled_arrival||'').slice(0,5))} - ${escapeHtml((r.scheduled_departure||'').slice(0,5))} · ${escapeHtml(r.status || '')}</div>
+        </div>`;
+      }
+    });
+    html += '</div>';
+    return html;
+  }
+
+  async function sendChatQuery(){
+    const input = document.getElementById('smartQueryInput');
+    const text = input.value.trim();
+    if(!text) return;
+
+    addChatBubble('user', text);
+    input.value = '';
+    document.getElementById('chatSuggestions').innerHTML = '';
+
+    const container = document.getElementById('chatMessages');
+    const typing = document.createElement('div');
+    typing.className = 'chat-typing';
+    typing.id = 'chatTypingIndicator';
+    typing.textContent = '● ● ●';
+    container.appendChild(typing);
+    container.scrollTop = container.scrollHeight;
+
+    try{
+      const res = await fetch('/smart_query', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'query=' + encodeURIComponent(text)
+      });
+      const data = await res.json();
+      const typingEl = document.getElementById('chatTypingIndicator');
+      if(typingEl) typingEl.remove();
+
+      const resultsHtml = buildResultsHtml(data.result_type, data.results);
+      addChatBubble('assistant', data.message || "I couldn't understand that, try rephrasing.", resultsHtml);
+    } catch(e){
+      const typingEl = document.getElementById('chatTypingIndicator');
+      if(typingEl) typingEl.remove();
+      addChatBubble('assistant', "Something went wrong, please try again.");
+    }
+
+    renderChatSuggestions('');
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const input = document.getElementById('smartQueryInput');
+    const sendBtn = document.getElementById('chatSendBtn');
+    if(input){
+      input.addEventListener('input', function(){ renderChatSuggestions(this.value); });
+      input.addEventListener('keydown', function(e){
+        if(e.key === 'Enter'){ e.preventDefault(); sendChatQuery(); }
+      });
+    }
+    if(sendBtn){ sendBtn.addEventListener('click', sendChatQuery); }
+  });
+</script>
+</body>
+</html>

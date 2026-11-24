@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RailMitra — Track {{ train_number }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#060b18;
+  --panel:#0c1526;
+  --border:#1c2740;
+  --border-soft:#141d33;
+  --blue:#3f8cff;
+  --blue-dim:#1a3a63;
+  --green:#2bd48a;
+  --amber:#f5a623;
+  --text:#eef2fb;
+  --muted:#7c8aa8;
+  --muted-dim:#4d5975;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;
+  color:var(--text);
+  font-family:Inter,Arial,sans-serif;
+  background:var(--bg);
+  padding:28px;
+}
+button,input{font:inherit}
+button{cursor:pointer}
+
+/* ---------- topbar ---------- */
+.topbar{
+  display:flex;align-items:center;gap:24px;justify-content:space-between;
+  max-width:1400px;margin:0 auto 32px;
+}
+.brand{display:flex;align-items:center;gap:10px;white-space:nowrap}
+.brand-icon{font-size:22px;color:var(--blue)}
+.brand-name{font:600 20px "Space Grotesk";letter-spacing:-0.5px}
+.brand-name b{color:var(--blue);font-weight:600}
+.searchbar{display:flex;align-items:center;gap:8px;flex:1;max-width:520px}
+.searchbar input{
+  width:100%;background:var(--panel);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);padding:11px 14px;outline:none;font-size:14px;
+}
+.searchbar input:focus{border-color:var(--blue)}
+.date-box{
+  border:1px solid var(--border);border-radius:10px;padding:11px 14px;
+  background:var(--panel);color:var(--text);white-space:nowrap;font-size:14px;
+}
+.track-btn{
+  border:0;border-radius:10px;padding:11px 18px;
+  background:var(--blue);color:#fff;font-weight:600;font-size:14px;
+  display:flex;align-items:center;gap:6px;
+}
+.back-btn{
+  color:var(--muted);text-decoration:none;font-size:13px;white-space:nowrap;
+}
+.back-btn:hover{color:var(--text)}
+
+/* ---------- layout ---------- */
+.layout{max-width:1400px;margin:auto;display:grid;grid-template-columns:1fr 320px;gap:16px}
+.layout main{min-width:0}
+.panel{
+  background:var(--panel);
+  border:1px solid var(--border);border-radius:var(--radius);
+  min-width:0;
+}
+
+/* ---------- route panel ---------- */
+.route-panel{padding:24px 24px 28px}
+.route-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.route-title{font-size:16px;font-weight:600}
+.route-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.live-tag{
+  font-size:12px;color:var(--green);display:flex;align-items:center;gap:6px;
+}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+
+.route-track{position:relative;padding:34px 4px 0}
+.route-line{position:relative;height:2px;background:var(--border);border-radius:2px}
+.route-line-fill{position:absolute;left:0;top:0;height:100%;background:var(--blue);border-radius:2px}
+.route-dot{position:absolute;top:50%;width:8px;height:8px;border-radius:50%;background:var(--muted-dim);transform:translate(-50%,-50%)}
+.route-dot.start{left:0;background:var(--muted-dim)}
+.route-dot.end{left:100%;background:var(--muted-dim)}
+.route-dot.train{
+  width:12px;height:12px;background:var(--bg);border:2px solid var(--blue);
+  box-shadow:0 0 0 4px var(--blue-dim);z-index:2;
+}
+.route-endpoints{display:flex;justify-content:space-between;padding:0 4px;margin-top:14px}
+.route-endpoints span{font-size:12px;color:var(--muted-dim)}
+
+.approach-box{text-align:center;margin:26px 0 6px}
+.approach-label{font-size:12px;color:var(--muted);margin-bottom:4px}
+.approach-name{font-size:24px;font-weight:600;font-family:"Space Grotesk"}
+
+/* ---------- stat cards ---------- */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:24px}
+.stat-cell{background:var(--panel);padding:16px 18px}
+.stat-label{font-size:12px;color:var(--muted);margin-bottom:6px}
+.stat-value{font-size:19px;font-weight:600;font-family:"Space Grotesk"}
+.stat-value.warn{color:var(--amber)}
+
+/* ---------- timeline ---------- */
+.timeline-panel{padding:22px 24px;margin-top:16px;min-width:0}
+.section-title{font-size:14px;font-weight:600;color:var(--muted);margin-bottom:18px;text-transform:uppercase;letter-spacing:.03em}
+.timeline{display:flex;align-items:flex-start;position:relative;overflow-x:auto;padding:6px 4px 4px}
+.timeline:before{content:"";position:absolute;left:22px;right:22px;top:20px;height:2px;background:var(--border)}
+.timeline-progress{position:absolute;left:22px;top:20px;height:2px;background:var(--blue)}
+.stop{position:relative;z-index:2;flex:1;min-width:110px;text-align:center}
+.stop-dot{width:9px;height:9px;margin:15px auto 12px;border-radius:50%;background:var(--bg);border:2px solid var(--muted-dim)}
+.stop.done .stop-dot{background:var(--blue);border-color:var(--blue)}
+.stop.current .stop-dot{width:13px;height:13px;margin-top:13px;background:var(--bg);border:2px solid var(--blue);box-shadow:0 0 0 4px var(--blue-dim)}
+.stop-name{font-size:13px;font-weight:500}
+.stop-time{font-size:12px;color:var(--muted);margin-top:5px}
+.stop-tag{font-size:10px;color:var(--muted-dim);margin-top:4px;text-transform:uppercase;letter-spacing:.03em}
+.stop.current .stop-tag{color:var(--blue)}
+
+/* ---------- right panel ---------- */
+.right-panel{padding:22px}
+.detail-top{display:flex;gap:12px;align-items:flex-start}
+.train-icon{font-size:22px;color:var(--blue);margin-top:2px}
+.detail-name{font-size:15px;font-weight:600;line-height:1.4}
+.detail-number{color:var(--muted);font-size:12px;margin-top:3px}
+.badge{
+  display:inline-flex;align-items:center;gap:5px;margin-top:10px;padding:5px 10px;border-radius:20px;
+  background:rgba(43,212,138,.1);border:1px solid rgba(43,212,138,.25);color:var(--green);font-size:11px;font-weight:600;
+}
+.badge i{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block}
+.detail-line{height:1px;background:var(--border);margin:20px 0}
+
+.detail-item{display:flex;justify-content:space-between;align-items:center;margin:14px 0}
+.detail-item label{color:var(--muted);font-size:13px}
+.detail-item strong{font-size:13px;font-weight:500;text-align:right}
+
+.progress-title{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-bottom:8px}
+.progress-title b{color:var(--text);font-weight:600}
+.progress{height:6px;border-radius:20px;background:var(--border);overflow:hidden}
+.progress span{display:block;height:100%;background:var(--blue);border-radius:20px}
+
+/* ---------- QR code (scan-to-track-on-phone) ---------- */
+.qr-box{
+  text-align:center;
+}
+.qr-label{
+  font-size:11px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.05em;margin-bottom:12px;
+}
+.qr-image-wrap{
+  display:inline-block;background:#fff;padding:10px;border-radius:12px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.25);
+}
+.qr-image-wrap img{
+  display:block;width:130px;height:130px;
+}
+.qr-hint{
+  font-size:11.5px;color:var(--muted-dim);margin-top:10px;line-height:1.5;
+}
+
+.train-list-title{padding:16px 22px 10px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.train-row{
+  display:flex;align-items:center;gap:10px;padding:10px 22px;border-left:2px solid transparent;
+}
+.train-row.selected{border-left-color:var(--blue);background:rgba(63,140,255,.06)}
+.train-row strong{font-size:12px;display:block}
+.train-row small{font-size:11px;color:var(--muted)}
+
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .topbar{flex-wrap:wrap}.searchbar{order:3;max-width:none;flex-basis:100%}
+}
+</style>
+</head>
+
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-icon">&#128646;</span>
+    <div class="brand-name">Rail<b>Mitra</b></div>
+  </div>
+  <form class="searchbar" action="/track_train" method="get" onsubmit="return handleTrackSubmit(this)">
+    <input name="train_number" value="{{ train_number or '' }}" placeholder="Train number" required>
+    <input class="date-box" type="date" name="date" value="{{ date or '' }}" required>
+    <button class="track-btn" id="trackBtn">Track</button>
+  </form>
+  <a class="back-btn" href="/dashboard">&larr; Dashboard</a>
+</header>
+
+{% if tracking %}
+<div class="layout">
+
+  <main>
+    <section class="panel route-panel">
+      <div class="route-top">
+        <div>
+          <div class="route-title">{{ tracking.train_name }}</div>
+          <div class="route-sub">Train No. {{ tracking.train_number }}</div>
+        </div>
+        <div class="live-tag"><span class="live-dot"></span>{{ "Live" if tracking.source == "live_api" else "Simulated" }}</div>
+      </div>
+
+      <div class="route-track" role="img" aria-label="Route progress">
+        <div class="route-line">
+          <div class="route-line-fill" id="routeFill"></div>
+        </div>
+        <span class="route-dot start"></span>
+        <span class="route-dot end"></span>
+        <span class="route-dot train" id="trainDot"></span>
+        <div class="route-endpoints">
+          <span>{{ tracking.stops[0].station_name if tracking.stops else "—" }}</span>
+          <span>{{ tracking.stops[-1].station_name if tracking.stops else "—" }}</span>
+        </div>
+      </div>
+
+      <div class="approach-box">
+        <div class="approach-label">{{ "Approaching" if tracking.current_status and "En route" in tracking.current_status else "Status" }}</div>
+        <div class="approach-name">{{ tracking.next_station or tracking.current_status }}</div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-cell">
+          <div class="stat-label">Delay</div>
+          <div class="stat-value {% if tracking.delay_minutes and tracking.delay_minutes > 0 %}warn{% endif %}">
+            {{ tracking.delay_minutes if tracking.delay_minutes is not none else "—" }}{% if tracking.delay_minutes is not none %}<span style="font-size:13px;font-weight:400"> min</span>{% endif %}
+          </div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Stations remaining</div>
+          <div class="stat-value">{{ tracking.stations_remaining }}</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Progress</div>
+          <div class="stat-value">{{ tracking.progress_fraction }}<span style="font-size:13px;font-weight:400">%</span></div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Speed</div>
+          <div class="stat-value">{{ tracking.speed_kmh if tracking.speed_kmh else "—" }}{% if tracking.speed_kmh %}<span style="font-size:13px;font-weight:400"> km/h</span>{% endif %}</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel timeline-panel">
+      <div class="section-title">Journey timeline</div>
+      <div class="timeline" id="timeline" style="position:relative">
+        <div class="timeline-progress" id="timelineProgress"></div>
+        {% for s in tracking.stops %}
+        <div class="stop {% if loop.index0 < tracking.current_index %}done{% elif loop.index0 == tracking.current_index %}current{% endif %}">
+          <div class="stop-dot"></div>
+          <div class="stop-name">{{ s.station_name }}</div>
+          <div class="stop-time">{{ s.departure or s.arrival or "—" }}</div>
+          <div class="stop-tag">{% if loop.index0 < tracking.current_index %}Departed{% elif loop.index0 == tracking.current_index %}Current{% else %}Upcoming{% endif %}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+
+  <aside class="panel right-panel">
+    <div class="detail-top">
+      <span class="train-icon">&#128647;</span>
+      <div>
+        <div class="detail-name">{{ tracking.train_name }}</div>
+        <div class="detail-number">Train No. {{ tracking.train_number }}</div>
+        <span class="badge"><i></i>{{ "Live from RailRadar" if tracking.source == "live_api" else "Schedule simulation" }}</span>
+      </div>
+    </div>
+    <div class="detail-line"></div>
+
+    <div class="detail-item"><label>From</label><strong>{{ tracking.stops[0].station_name if tracking.stops else "—" }}</strong></div>
+    <div class="detail-item"><label>Next station</label><strong>{{ tracking.next_station or "Journey endpoint" }}</strong></div>
+    <div class="detail-item"><label>Status</label><strong>{{ tracking.current_status }}</strong></div>
+
+    <div class="detail-line"></div>
+    <div class="progress-title"><span>Journey progress</span><b>{{ tracking.progress_fraction }}%</b></div>
+    <div class="progress"><span style="width:{{ tracking.progress_fraction }}%"></span></div>
+
+    {% if not is_admin_view and tracking_url_for_qr %}
+    <div class="detail-line"></div>
+    <div class="qr-box">
+      <div class="qr-label">Scan to track on your phone</div>
+      <div class="qr-image-wrap">
+        <img id="trackQrCode" alt="QR code linking to this train's live tracking page"
+             src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=0&data={{ tracking_url_for_qr | urlencode }}">
+      </div>
+      <div class="qr-hint">Opens this same tracking page on your phone's browser — no app needed.</div>
+    </div>
+    {% endif %}
+  </aside>
+
+</div>
+{% else %}
+<div class="panel" style="max-width:640px;margin:80px auto;padding:56px;text-align:center;color:var(--muted)">
+  <div style="font-size:32px;margin-bottom:14px">&#128752;</div>
+  <h2 style="color:var(--text);margin-bottom:8px;font-size:18px;font-weight:600">No tracking data found</h2>
+  <p style="font-size:14px">Enter a train number and date to track the train.</p>
+</div>
+{% endif %}
+
+<script>
+function handleTrackSubmit(form){
+  const btn=document.getElementById("trackBtn");
+  if(btn){btn.disabled=true;btn.textContent="Loading…";}
+  return true;
+}
+
+{% if tracking %}
+(function(){
+  const stops = [
+    {% for s in tracking.stops %}
+    {name: {{ s.station_name|tojson }}},
+    {% endfor %}
+  ];
+  const currentIndex = Number({{ tracking.current_index|default(0) }});
+  const progress = Number({{ tracking.progress_fraction|default(0) }});
+
+  // route progress line + train marker
+  const routeFill = document.getElementById("routeFill");
+  const trainDot = document.getElementById("trainDot");
+  const clamped = Math.min(100, Math.max(0, progress));
+  if(routeFill){ routeFill.style.width = clamped + "%"; }
+  if(trainDot){ trainDot.style.left = clamped + "%"; }
+
+  // timeline progress bar width
+  const timelineProgress = document.getElementById("timelineProgress");
+  if(timelineProgress && stops.length > 1){
+    const pct = Math.min(100, Math.max(0, (currentIndex / (stops.length - 1)) * 100));
+    timelineProgress.style.width = pct + "%";
+  }
+})();
+{% endif %}
+</script>
+</body>
+</html>

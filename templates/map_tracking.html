@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RailMitra - Live Gamified Train Tracker</title>
+
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', system-ui, sans-serif; background-color: #0b0f19; color: #fff; overflow: hidden; }
+        #map { height: 100vh; width: 100vw; background: #0b0f19; }
+
+        /* Floating Top Bar */
+        .search-card {
+            position: absolute; top: 20px; left: 20px; z-index: 1000;
+            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(12px);
+            padding: 12px 18px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex; gap: 12px; box-shadow: 0 20px 30px rgba(0,0,0,0.6);
+            align-items: center;
+        }
+        .search-card input {
+            background: #1e293b; border: 1px solid #334155; color: #fff;
+            padding: 10px 14px; border-radius: 8px; outline: none; font-size: 14px;
+        }
+        .search-card input:focus { border-color: #3b82f6; }
+        .search-card button {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff;
+            border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;
+            font-weight: 600; font-size: 14px; transition: all 0.2s ease;
+        }
+        .search-card button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); }
+
+        /* Game-Style Pulsing Marker Animation */
+        .train-icon-wrapper { position: relative; width: 44px; height: 44px; }
+        .train-pulse {
+            position: absolute; width: 100%; height: 100%; border-radius: 50%;
+            background: rgba(59, 130, 246, 0.4); animation: pulse 1.6s infinite ease-out;
+        }
+        .train-body {
+            position: absolute; top: 7px; left: 7px; width: 30px; height: 30px;
+            background: #2563eb; border: 2px solid #ffffff; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px #3b82f6; cursor: pointer;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.6); opacity: 1; }
+            100% { transform: scale(2.4); opacity: 0; }
+        }
+
+        /* Slide Drawer UI */
+        .drawer {
+            position: absolute; right: -420px; top: 0; width: 380px; height: 100vh;
+            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(16px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1); z-index: 1001;
+            transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 24px; box-sizing: border-box; overflow-y: auto;
+        }
+        .drawer.active { right: 0; }
+        .close-btn { float: right; background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; }
+        .close-btn:hover { color: #fff; }
+
+        /* Route Timeline */
+        .timeline { border-left: 2px solid #334155; margin-left: 12px; margin-top: 20px; padding-left: 20px; }
+        .station-node { position: relative; margin-bottom: 24px; }
+        .station-node::before {
+            content: ''; position: absolute; left: -27px; top: 4px; width: 12px; height: 12px;
+            border-radius: 50%; background: #475569; border: 2px solid #0f172a;
+        }
+        .station-node.completed::before { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
+        .station-node.current::before { background: #3b82f6; box-shadow: 0 0 12px #3b82f6; animation: pulse 1.2s infinite; }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Top Search Engine -->
+    <div class="search-card">
+        <input type="text" id="trainNumInput" placeholder="Train No. (e.g. 12901)">
+        <input type="date" id="dateInput">
+        <button onclick="executeTracking()">Track Train</button>
+    </div>
+
+    <!-- Main Map View -->
+    <div id="map"></div>
+
+    <!-- Interactive Details Panel -->
+    <div class="drawer" id="trainDrawer">
+        <button class="close-btn" onclick="closeDrawer()">✕</button>
+        <h2 id="dTrainName" style="margin: 0; color: #60a5fa; font-size: 20px;">-</h2>
+        <div id="dTrainNum" style="color: #94a3b8; font-weight: 600; margin-top: 4px;">#-----</div>
+
+        <div style="background: #1e293b; padding: 16px; border-radius: 12px; margin: 20px 0; border: 1px solid #334155;">
+            <div style="font-size: 11px; color: #94a3b8; letter-spacing: 0.5px;">LIVE STATUS</div>
+            <div id="dStatus" style="font-weight: 700; color: #f59e0b; font-size: 15px; margin-top: 4px;">En Route</div>
+            <div style="font-size: 12px; color: #94a3b8; margin-top: 10px;">Progress: <span id="dProgress" style="color:#fff; font-weight:bold;">0%</span></div>
+        </div>
+
+        <h3 style="font-size: 16px; color: #e2e8f0; margin-bottom: 12px;">Station Progress</h3>
+        <div class="timeline" id="dTimeline"></div>
+    </div>
+
+    <!-- Leaflet JS Engine -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Flat Map Tiles setup
+        const map = L.map('map', { zoomControl: false }).setView([22.3072, 73.1812], 6);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap © CARTO'
+        }).addTo(map);
+
+        let activeMarker = null;
+        let routeLine = null;
+
+        // Custom Train Marker
+        const trainIcon = L.divIcon({
+            className: 'custom-train-marker',
+            html: `
+                <div class="train-icon-wrapper">
+                    <div class="train-pulse"></div>
+                    <div class="train-body">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+                            <rect x="4" y="3" width="16" height="16" rx="2"></rect>
+                            <path d="M4 11h16"></path>
+                            <circle cx="8" cy="15" r="1"></circle>
+                            <circle cx="16" cy="15" r="1"></circle>
+                        </svg>
+                    </div>
+                </div>
+            `,
+            iconSize: [44, 44],
+            iconAnchor: [22, 22]
+        });
+
+        // 1. Live Tracking API Fetcher
+        async function fetchTrainData(trainNumber, travelDate) {
+            try {
+                const response = await fetch(`/api/live-track?train_number=${trainNumber}&travel_date=${travelDate}`);
+                if(!response.ok) throw new Error("Train details not available.");
+                const data = await response.json();
+                renderMapState(data);
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        // 2. Render Map Path and Moving Marker
+        function renderMapState(data) {
+            if (activeMarker) map.removeLayer(activeMarker);
+            if (routeLine) map.removeLayer(routeLine);
+
+            const coordinates = data.stops
+                .filter(stop => stop.lat !== null && stop.lng !== null)
+                .map(stop => [stop.lat, stop.lng]);
+
+            if (coordinates.length === 0) {
+                alert("Station coordinates missing for mapping.");
+                return;
+            }
+
+            // Draw route line
+            routeLine = L.polyline(coordinates, { color: '#3b82f6', weight: 4, opacity: 0.8, dashArray: '6, 8' }).addTo(map);
+            map.fitBounds(routeLine.getBounds(), { padding: [80, 80] });
+
+            // Set moving train pin
+            activeMarker = L.marker([data.current_lat, data.current_lng], { icon: trainIcon }).addTo(map);
+            activeMarker.on('click', () => updateDrawerUI(data));
+
+            updateDrawerUI(data);
+        }
+
+        // 3. Update Side Drawer Details
+        function updateDrawerUI(data) {
+            document.getElementById('dTrainName').innerText = data.train_name;
+            document.getElementById('dTrainNum').innerText = `#${data.train_number}`;
+            document.getElementById('dStatus').innerText = data.current_status;
+            document.getElementById('dProgress').innerText = `${data.progress_fraction}%`;
+
+            const timeline = document.getElementById('dTimeline');
+            timeline.innerHTML = '';
+
+            data.stops.forEach((stop, index) => {
+                let statusClass = '';
+                if (index < data.current_index) statusClass = 'completed';
+                else if (index === data.current_index) statusClass = 'current';
+
+                const arrivalTime = stop.arrival ? stop.arrival.split('T')[1].substring(0, 5) : '--:--';
+
+                timeline.innerHTML += `
+                    <div class="station-node ${statusClass}">
+                        <div style="font-weight: 600; color: #f1f5f9; font-size: 14px;">${stop.station_name}</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">PF ${stop.platform_number} | Arr: ${arrivalTime}</div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('trainDrawer').classList.add('active');
+        }
+
+        function closeDrawer() {
+            document.getElementById('trainDrawer').classList.remove('active');
+        }
+
+        function executeTracking() {
+            const num = document.getElementById('trainNumInput').value;
+            const date = document.getElementById('dateInput').value;
+            if (num && date) fetchTrainData(num, date);
+        }
+
+        // Query parameters listener (Dashboard Se Auto Load Ke Liye)
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const trainNum = params.get('train_number');
+            const date = params.get('travel_date');
+
+            if (trainNum && date) {
+                document.getElementById('trainNumInput').value = trainNum;
+                document.getElementById('dateInput').value = date;
+                fetchTrainData(trainNum, date);
+            }
+        });
+    </script>
+</body>
+</html>
